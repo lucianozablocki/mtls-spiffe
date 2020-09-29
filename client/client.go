@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+    "crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,8 +10,26 @@ import (
 )
 
 func main() {
-	// Request /hello over port 8081 via the GET method
-	r, err := http.Get("http://localhost:8081/hello")
+	// Create a CA certificate pool and add cert.pem to it
+	caCert, err := ioutil.ReadFile("../cert/ca.crt")
+	if err != nil {
+		log.Fatalf("could not open certificate file: %v", err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	
+
+	// Create a HTTPS client and supply the created CA pool
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		},
+	}
+
+	// Request /hello over port 8443 via the GET method
+	r, err := client.Get("https://localhost:8443/hello")
 	if err != nil {
 		log.Fatal(err)
 	}
