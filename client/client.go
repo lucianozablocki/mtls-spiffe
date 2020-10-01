@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 
 	"github.com/spiffe/go-spiffe/v2/bundle/x509bundle"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
@@ -44,7 +45,7 @@ func main() {
 		log.Fatalf("could not create new x509 bundle: %v", err)
 	}
 
-	certificate, err := tls.LoadX509KeyPair("../cert/client_another.crt", "../cert/client_another.key")
+	certificate, err := tls.LoadX509KeyPair("../cert/client.crt", "../cert/client.key")
 	if err != nil {
 		log.Fatalf("could not load client certificate: %v", err)
 	}
@@ -68,18 +69,18 @@ func main() {
 
 	// Request /hello over port 8443 via the GET method
 	r, err := client.Get("https://localhost:8443/hello")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("HTTP Response Status: %v", r.StatusCode)
 
-	// Read the response body
+	if err != nil {
+		log.Fatalf("could not make GET request: %v", err)
+	}
+
+	// Read response body
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	dump, err := httputil.DumpResponse(r, true)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("could not dump response: %v", err)
 	}
 
-	// Print the response body to stdout
-	fmt.Printf("%s\n", body)
+	// Print response to stdout
+	fmt.Printf("%s\n", dump)
 }
