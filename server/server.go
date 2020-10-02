@@ -33,7 +33,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compare received SPIFFE ID with expected one
-	var matcher = spiffeid.MatchID(authorizedSpiffeId)
+	matcher := spiffeid.MatchID(authorizedSpiffeId)
 	err = matcher(clientSpiffeId)
 	if err != nil {
 		message := fmt.Sprintf("failed to match spiffe id: %v", err)
