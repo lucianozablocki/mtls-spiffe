@@ -24,10 +24,7 @@ func main() {
 	// Set up a /hello resource handler
 	http.HandleFunc("/hello", helloHandler)
 
-	// Listen to port 8443 and wait
-	// log.Fatal(http.ListenAndServeTLS(":8443", "../cert/server.crt", "../cert/server.key", nil))
-
-	// Create a CA certificate pool and add cert.pem to it
+	// Create a CA certificate pool and add ca.crt to it
 	caCert, err := ioutil.ReadFile("../cert/ca.crt")
 	if err != nil {
 		log.Fatal(err)
@@ -35,19 +32,25 @@ func main() {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
+	// Create trust domain
 	trustDomain, err := spiffeid.TrustDomainFromString("localhost")
 	if err != nil {
 		log.Fatalf("could not create trustdomain from string: %v", err)
 	}
-	authorizedSpiffeId, err := spiffeid.New("localhost", "client")
-	if err != nil {
-		log.Fatalf("could not create spiffe id from string: %v", err)
-	}
+
+	// Load keys for this trust domain
 	bundle, err := x509bundle.Load(trustDomain, "../cert/ca.crt")
 	if err != nil {
 		log.Fatalf("could not create new x509 bundle: %v", err)
 	}
-	// Create the TLS Config with the CA pool and enable Client certificate validation
+
+	// Create the authorized SPIFFE ID that will connect to the server
+	authorizedSpiffeId, err := spiffeid.New("localhost", "client")
+	if err != nil {
+		log.Fatalf("could not create spiffe id from string: %v", err)
+	}
+
+	// Create the TLS Config enable Client certificate validation
 	tlsConfig := &tls.Config{
 		ClientCAs:             caCertPool,
 		ClientAuth:            tls.RequireAndVerifyClientCert,

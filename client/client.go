@@ -15,42 +15,39 @@ import (
 )
 
 func main() {
-	// Create a CA certificate pool and add cert.pem to it
+	// Create a CA certificate pool and add ca.crt to it
 	caCert, err := ioutil.ReadFile("../cert/ca.crt")
 	if err != nil {
 		log.Fatalf("could not open certificate file: %v", err)
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
-	// x509bundle.Source
-	// trustDomain, err := spiffeid.FromString("spiffe://localhost/")
+
+	// Create trust domain
 	trustDomain, err := spiffeid.TrustDomainFromString("localhost")
 	if err != nil {
 		log.Fatalf("could not create trustdomain from string: %v", err)
 	}
+
+	// Load keys for this trust domain
+	bundle, err := x509bundle.Load(trustDomain, "../cert/ca.crt")
+	if err != nil {
+		log.Fatalf("could not load x509 bundle from cert: %v", err)
+	}
+
+	// Create the SPIFFE ID that's authorized to connect
 	authorizedSpiffeId, err := spiffeid.New("localhost", "server")
 	if err != nil {
 		log.Fatalf("could not create spiffe id from string: %v", err)
 	}
-	// source, err := workloadapi.NewX509Source(context.Background())
-	// if err != nil {
-	// 	log.Fatalf("could not create new x509 source: %v", err)
-	// }
-	// bundle, err := x509bundle.Source.GetX509BundleForTrustDomain(source, trustDomain)
-	// if err != nil {
-	// 	log.Fatalf("could not bundle from trust domain: %v", err)
-	// }
-	bundle, err := x509bundle.Load(trustDomain, "../cert/ca.crt")
-	if err != nil {
-		log.Fatalf("could not create new x509 bundle: %v", err)
-	}
 
+	// Load client certificate to be presented
 	certificate, err := tls.LoadX509KeyPair("../cert/client.crt", "../cert/client.key")
 	if err != nil {
 		log.Fatalf("could not load client certificate: %v", err)
 	}
 
-	// Create a HTTPS client and supply the created CA pool
+	// Create a HTTPS client, with the client certificate, and GO-SPIFFE'S VerifyPeerCertificate verifier to comply with SPIFFE standards
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -61,15 +58,9 @@ func main() {
 			},
 		},
 	}
-	// client := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		TLSClientConfig: tlsconfig.TLSClientConfig(bundle, tlsconfig.AuthorizeID(authorizedSpiffeId)),
-	// 	},
-	// }
 
-	// Request /hello over port 8443 via the GET method
+	// Request /hello over port 8443 via GET method
 	r, err := client.Get("https://localhost:8443/hello")
-
 	if err != nil {
 		log.Fatalf("could not make GET request: %v", err)
 	}
