@@ -38,7 +38,7 @@ func main() {
 	// Create the SPIFFE ID that's authorized to connect
 	authorizedSpiffeId, err := spiffeid.New("localhost", "server")
 	if err != nil {
-		log.Fatalf("could not create spiffe id from string: %v", err)
+		log.Fatalf("could not create authorized spiffe id from string: %v", err)
 	}
 
 	// Load client certificate to be presented
