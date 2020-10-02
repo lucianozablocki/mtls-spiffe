@@ -1,0 +1,5 @@
+[v3_ca]
+keyUsage=critical,digitalSignature
+subjectAltName = critical,URI:spiffe://localhost/client
+basicConstraints=CA:false 
+
